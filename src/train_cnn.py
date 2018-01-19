@@ -11,9 +11,7 @@ data = DataSet()
 
 # Helper: Save the model.
 checkpointer = ModelCheckpoint(
-    filepath=os.path.join('data', 'checkpoints', 'inception.{epoch:03d}-{val_loss:.2f}.hdf5'),
-    verbose=1,
-    save_best_only=True)
+    filepath=os.path.join('data', 'checkpoints', 'inception.{epoch:03d}-{val_loss:.2f}.hdf5'), verbose=1)
 
 # Helper: Stop when we stop learning.
 early_stopper = EarlyStopping(patience=2)
@@ -68,14 +66,14 @@ def freeze_all_but_mid_and_top(model):
 
 def get_generators():
     train_datagen = ImageDataGenerator(
-        rescale=1./255,
+        rescale=1. / 255,
         shear_range=0.2,
         horizontal_flip=True,
         rotation_range=10.,
         width_shift_range=0.2,
         height_shift_range=0.2)
 
-    test_datagen = ImageDataGenerator(rescale=1./255)
+    test_datagen = ImageDataGenerator(rescale=1. / 255)
 
     train_generator = train_datagen.flow_from_directory(
         os.path.join('data', 'train'),
@@ -100,7 +98,7 @@ def get_model(weights='imagenet'):
 
     # add a global spatial average pooling layer
     x = base_model.output
-    x = GlobalAveragePooling2D()(x)         # or: InceptionResNetV2(weights=weights, include_top=False, pooling='avg')
+    x = GlobalAveragePooling2D()(x)  # or: InceptionResNetV2(weights=weights, include_top=False, pooling='avg')
     # let's add a fully-connected layer
     x = Dense(1024, activation='relu')(x)
     # and a logistic layer
@@ -126,8 +124,9 @@ def main(weights_file):
 
     # Get and train the mid layers.
     model = freeze_all_but_mid_and_top(model)
-    model = train_model(model, 1000, generators,
+    model = train_model(model, 200, generators,
                         [checkpointer, early_stopper, tensorboard])
+
 
 if __name__ == '__main__':
     weights_file = None

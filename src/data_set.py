@@ -5,7 +5,7 @@ import numpy as np
 import glob
 import os.path
 import operator
-import threading
+# import threading
 from keras.utils import to_categorical
 import pandas as pd
 from image_processor import process_image
