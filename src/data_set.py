@@ -1,39 +1,36 @@
 """
 Class for managing our data.
 """
-import csv
 import numpy as np
-import random
 import glob
 import os.path
-import sys
 import operator
 import threading
-#from processor import process_image
 from keras.utils import to_categorical
 import pandas as pd
+from image_processor import process_image
 
 
-class threadsafe_iterator:
-    def __init__(self, iterator):
-        self.iterator = iterator
-        self.lock = threading.Lock()
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        with self.lock:
-            return next(self.iterator)
-
-
-def threadsafe_generator(func):
-    """Decorator"""
-
-    def gen(*a, **kw):
-        return threadsafe_iterator(func(*a, **kw))
-
-    return gen
+# class threadsafe_iterator:
+#     def __init__(self, iterator):
+#         self.iterator = iterator
+#         self.lock = threading.Lock()
+#
+#     def __iter__(self):
+#         return self
+#
+#     def __next__(self):
+#         with self.lock:
+#             return next(self.iterator)
+#
+#
+# def threadsafe_generator(func):
+#     """Decorator"""
+#
+#     def gen(*a, **kw):
+#         return threadsafe_iterator(func(*a, **kw))
+#
+#     return gen
 
 
 class DataSet:
@@ -151,7 +148,7 @@ class DataSet:
                 sequence = None
 
                 # Get a random sample.
-                sample = random.choice(data)
+                sample = data.sample()
 
                 # Check to see if we've already saved this sequence.
                 if data_type is "images":
@@ -169,7 +166,7 @@ class DataSet:
                         raise ValueError("Can't find sequence. Did you generate them?")
 
                 X.append(sequence)
-                y.append(self.get_class_one_hot(sample[1]))
+                y.append(self.get_class_one_hot(sample["class_name"]))
 
             yield np.array(X), np.array(y)
 
@@ -218,12 +215,11 @@ class DataSet:
         # Cut off the last one if needed.
         return output[:size]
 
-    @staticmethod
-    def print_class_from_prediction(predictions, nb_to_return=5):
+    def print_class_from_prediction(self, predictions, nb_to_return=5):
         """Given a prediction, print the top classes."""
         # Get the prediction for each label.
         label_predictions = {}
-        for i, label in enumerate(data.classes):
+        for i, label in enumerate(self.data.classes):
             label_predictions[label] = predictions[i]
 
         # Now sort them.
