@@ -4,7 +4,10 @@ from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping
+from data_set import DataSet
 import os
+
+data = DataSet()
 
 # Helper: Save the model.
 checkpointer = ModelCheckpoint(

@@ -9,8 +9,9 @@ import os.path
 import sys
 import operator
 import threading
-from processor import process_image
+#from processor import process_image
 from keras.utils import to_categorical
+import pandas as pd
 
 
 class threadsafe_iterator:
@@ -36,7 +37,6 @@ def threadsafe_generator(func):
 
 
 class DataSet:
-
     def __init__(self, seq_length=40, class_limit=None, image_shape=(299, 299, 3)):
         """Constructor.
         seq_length = (int) the number of frames to consider
@@ -62,43 +62,20 @@ class DataSet:
     @staticmethod
     def get_data():
         """Load our data from file."""
-        # with open(os.path.join('data', 'data_file.csv'), "r") as infile, open(os.path.join('data', 'data_file_new.csv'), 'r+') as outfile:
-        #     for line in infile:
-        #         if not line.strip(): continue  # skip the empty line
-        #         outfile.write(line)  # non-empty line. Write it to output
-        with open(os.path.join('data', 'data_files.csv'), 'r') as fin:
-            reader = csv.reader(fin)
-            data = list(reader)
-
-        return data
+        return pd.read_csv(os.path.join('data', 'data_files.csv'),
+                           names=["train_test", "class_name", "file_name", "frame_count"]
+                           )
 
     def clean_data(self):
         """Limit samples to greater than the sequence length and fewer
         than N frames. Also limit it to classes we want to use."""
-        data_clean = []
-        for item in self.data:
-            if int(item[3]) >= self.seq_length and int(item[3]) <= self.max_frames \
-                    and item[1] in self.classes:
-                data_clean.append(item)
-
-        return data_clean
+        return self.data[(self.seq_length <= self.data["frame_count"]) & (self.data["frame_count"] <= self.max_frames)]
 
     def get_classes(self):
         """Extract the classes from our data. If we want to limit them,
         only return the classes we need."""
-        classes = []
-        for item in self.data:
-            if item[1] not in classes:
-                classes.append(item[1])
 
-        # Sort them.
-        classes = sorted(classes)
-
-        # Return.
-        if self.class_limit is not None:
-            return classes[:self.class_limit]
-        else:
-            return classes
+        return list(self.data["class_name"].unique())
 
     def get_class_one_hot(self, class_str):
         """Given a class as a string, return its number in the classes
@@ -115,13 +92,9 @@ class DataSet:
 
     def split_train_test(self):
         """Split the data into train and test groups."""
-        train = []
-        test = []
-        for item in self.data:
-            if item[0] == 'train':
-                train.append(item)
-            else:
-                test.append(item)
+        train = self.data[(self.data["train_test"] == "train")]
+        test = self.data[(self.data["train_test"] == "test")]
+
         return train, test
 
     def get_all_sequences_in_memory(self, train_test, data_type):
@@ -136,7 +109,7 @@ class DataSet:
         print("Loading %d samples into memory for %sing." % (len(data), train_test))
 
         X, y = [], []
-        for row in data:
+        for index, row in data.iterrows():
 
             if data_type == 'images':
                 frames = self.get_frames_for_sample(row)
@@ -149,8 +122,7 @@ class DataSet:
                 sequence = self.get_extracted_sequence(data_type, row)
 
                 if sequence is None:
-                    print("Can't find sequence. Did you generate them?")
-                    raise
+                    raise Exception("Can't find sequence. Did you generate them?")
 
             X.append(sequence)
             y.append(self.get_class_one_hot(row[1]))
@@ -207,7 +179,7 @@ class DataSet:
 
     def get_extracted_sequence(self, data_type, sample):
         """Get the saved extracted features."""
-        filename = sample[2]
+        filename = sample["file_name"]
         path = os.path.join(self.sequence_path, filename + '-' + str(self.seq_length) + \
                             '-' + data_type + '.npy')
         if os.path.isfile(path):
@@ -219,8 +191,8 @@ class DataSet:
     def get_frames_for_sample(sample):
         """Given a sample row from the data file, get all the corresponding frame
         filenames."""
-        path = os.path.join('data', sample[0], sample[1])
-        filename = sample[2]
+        path = os.path.join('data', sample["train_test"], sample["class_name"])
+        filename = sample["file_name"]
         images = sorted(glob.glob(os.path.join(path, filename + '*jpg')))
         return images
 
@@ -234,7 +206,7 @@ class DataSet:
     def rescale_list(input_list, size):
         """Given a list and a size, return a rescaled/samples list. For example,
         if we want a list of size 5 and we have a list of size 25, return a new
-        list of size five which is every 5th element of the origina list."""
+        list of size five which is every 5th element of the original list."""
         assert len(input_list) >= size
 
         # Get the number to skip between iterations.
