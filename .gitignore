@@ -1,0 +1,7 @@
+src/data/checkpoints/
+src/data/hmdb/
+src/data/sequences/
+src/data/tensorboard_logs/
+src/data/test/
+src/data/train/
+.idea/
