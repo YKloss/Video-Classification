@@ -11,7 +11,7 @@ data = DataSet()
 
 # Helper: Save the model.
 checkpointer = ModelCheckpoint(
-    filepath=os.path.join('data', 'checkpoints', 'inception.{epoch:03d}-{val_loss:.2f}.hdf5'), verbose=1)
+    filepath=os.path.join('data', 'checkpoints', 'cnn.{epoch:03d}-{val_loss:.2f}.hdf5'), verbose=1)
 
 # Helper: Stop when we stop learning.
 early_stopper = EarlyStopping(patience=2)
@@ -71,7 +71,8 @@ def get_generators():
         horizontal_flip=True,
         rotation_range=10.,
         width_shift_range=0.2,
-        height_shift_range=0.2)
+        height_shift_range=0.2,
+        zoom_range=0.2)
 
     test_datagen = ImageDataGenerator(rescale=1. / 255)
 

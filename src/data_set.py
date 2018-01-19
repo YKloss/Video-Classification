@@ -5,32 +5,32 @@ import numpy as np
 import glob
 import os.path
 import operator
-# import threading
+import threading
 from keras.utils import to_categorical
 import pandas as pd
 from image_processor import process_image
 
 
-# class threadsafe_iterator:
-#     def __init__(self, iterator):
-#         self.iterator = iterator
-#         self.lock = threading.Lock()
-#
-#     def __iter__(self):
-#         return self
-#
-#     def __next__(self):
-#         with self.lock:
-#             return next(self.iterator)
-#
-#
-# def threadsafe_generator(func):
-#     """Decorator"""
-#
-#     def gen(*a, **kw):
-#         return threadsafe_iterator(func(*a, **kw))
-#
-#     return gen
+class threadsafe_iterator:
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.lock = threading.Lock()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        with self.lock:
+            return next(self.iterator)
+
+
+def threadsafe_generator(func):
+    """Decorator"""
+
+    def gen(*a, **kw):
+        return threadsafe_iterator(func(*a, **kw))
+
+    return gen
 
 
 class DataSet:
