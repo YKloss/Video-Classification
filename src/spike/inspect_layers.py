@@ -10,7 +10,7 @@ import os
 print(os.getcwd())
 
 # create the base pre-trained model
-base_model = InceptionResNetV2(weights='imagenet', include_top=False)
+base_model = InceptionV3(weights='imagenet', include_top=False)
 # plot_model(base_model, to_file='spike\\inception_resnetv2_with_top.png')
 
 for i, layer in enumerate(base_model.layers):
