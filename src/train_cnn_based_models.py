@@ -61,7 +61,7 @@ def train(seq_length, model_name,
                               model_name + '-' + 'features' + '.{epoch:03d}-{val_loss:.3f}.hdf5'),
         save_best_only=False)
 
-    # Callback: TensorBoard
+    # Callback: TensorBoard.
     tb = TensorBoard(log_dir=log_files)
 
     # Callback: Stop when val_loss is not changing for a number of epochs.

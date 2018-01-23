@@ -9,14 +9,14 @@ import os
 
 data = DataSet()
 
-# Helper: Save the model.
+# Callback: Save the model.
 checkpointer = ModelCheckpoint(
     filepath=os.path.join('data', 'checkpoints', 'cnn2.{epoch:03d}-{val_loss:.2f}.hdf5'), verbose=1)
 
-# Helper: Stop when we stop learning.
+# Callback: Stop when val_loss is not changing for a number of epochs.
 early_stopper = EarlyStopping(monitor='val_loss', patience=15)
 
-# Helper: TensorBoard
+# Callback: TensorBoard.
 tensorboard = TensorBoard(log_dir=os.path.join('data', 'tensorboard_logs', 'train_two_inceptions2'), histogram_freq=0,
                           write_graph=True,
                           write_images=True)
@@ -24,6 +24,7 @@ tensorboard = TensorBoard(log_dir=os.path.join('data', 'tensorboard_logs', 'trai
 
 def train_model(model, nb_epoch, generators, callbacks=[]):
     train_generator, validation_generator = generators
+
     model.fit_generator(
         train_generator,
         steps_per_epoch=100,
@@ -31,17 +32,16 @@ def train_model(model, nb_epoch, generators, callbacks=[]):
         validation_steps=50,
         epochs=nb_epoch,
         callbacks=callbacks)
+
     return model
 
 
 def freeze_all_but_top(model):
-    """Used to train just the top layers of the model."""
-    # first: train only the top layers (which were randomly initialized)
-    # i.e. freeze all convolutional InceptionV3 layers
+    # Train only the top layers.
     for layer in model.layers[:-2]:
         layer.trainable = False
 
-    # compile the model (should be done *after* setting layers to non-trainable)
+    # Compile the model.
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy',
                   metrics=['accuracy', 'top_k_categorical_accuracy'])
 
@@ -49,16 +49,14 @@ def freeze_all_but_top(model):
 
 
 def freeze_all_but_mid_and_top(model):
-    """After we fine-tune the dense layers, train deeper."""
-    # we chose to train the top 2 inception blocks, i.e. we will freeze
-    # the first 172 layers and unfreeze the rest:
+    # Train the the last two inception modules and the classification layers.
     for layer in model.layers[:249]:
         layer.trainable = False
     for layer in model.layers[249:]:
         layer.trainable = True
 
-    # we need to recompile the model for these modifications to take effect
-    # we use SGD with a low learning rate
+    # Recompile.
+    # It's recommended to use a low training rate,
     model.compile(
         optimizer=SGD(lr=0.0001, momentum=0.9),
         loss='categorical_crossentropy',
@@ -68,6 +66,8 @@ def freeze_all_but_mid_and_top(model):
 
 
 def get_generators():
+    # The ImageDataGenerator takes images and transforms them.
+    # This is also a basic image preprocessing step.
     train_datagen = ImageDataGenerator(
         rescale=1. / 255,
         shear_range=0.2,
@@ -98,44 +98,35 @@ def get_generators():
 
 
 def get_model(weights='imagenet'):
-    # create the base pre-trained model
+    # Get the Inception-v3 model from Google. Exclude the top.
     base_model = InceptionV3(weights=weights, include_top=False)
 
-    # add a global spatial average pooling layer
+    # Add our own classification layers.
     x = base_model.output
-    x = GlobalAveragePooling2D()(x)  # or: InceptionResNetV2(weights=weights, include_top=False, pooling='avg')
-    # let's add a fully-connected layer
-    x = Dropout(0.4)(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dropout(0.4)(x)                     # Dropout is needed to avoid overfitting.
     x = Dense(1024, activation='relu')(x)
-
-    # and a logistic layer
     predictions = Dense(len(data.classes), activation='softmax')(x)
 
-    # this is the model we will train
     model = Model(inputs=base_model.input, outputs=predictions)
+
     return model
 
 
-def main(weights_file):
+def main():
+    # Get the model (Inception-v3 with our own classification layers with random initialized weights).
     model = get_model()
     generators = get_generators()
 
-    if weights_file is None:
-        print("Loading network from ImageNet weights.")
-        # Get and train the top layers.
-        model = freeze_all_but_top(model)
-        model = train_model(model, 5, generators,
-                            [checkpointer, tensorboard])
-    else:
-        print("Loading saved model: %s." % weights_file)
-        model.load_weights(weights_file)
-
-    # Get and train the mid layers.
-    model = freeze_all_but_mid_and_top(model)
-    model = train_model(model, 1000, generators,
+    # Transfer Learning: Retrain the classification layers
+    model = freeze_all_but_top(model)
+    model = train_model(model, 5, generators,
                         [checkpointer, tensorboard])
+
+    # Fine tuning: Train the last two inception modules
+    model = freeze_all_but_mid_and_top(model)
+    train_model(model, 1000, generators, [checkpointer, tensorboard])
 
 
 if __name__ == '__main__':
-    weights_file = None
-    main(weights_file)
+    main()
