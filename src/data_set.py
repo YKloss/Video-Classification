@@ -42,7 +42,7 @@ class DataSet:
         """
         self.seq_length = seq_length
         self.class_limit = class_limit
-        self.sequence_path = os.path.join('data', 'sequences')
+        self.sequence_path = os.path.join('data', 'sequences', 'inceptionv3')
         self.max_frames = 300  # max number of frames a video can have for us to use it
 
         # Get the data.

@@ -20,14 +20,14 @@ def train(data_type, seq_length, model, saved_model=None,
         save_best_only=False)
 
     # Helper: TensorBoard
-    tb = TensorBoard(log_dir=os.path.join('data', 'tensorboard_logs', 'train_lstm_trainiertes_inceptionv3'))
+    tb = TensorBoard(log_dir=os.path.join('data', 'tensorboard_logs', 'train_global_pooling'))
 
     # Helper: Stop when we stop learning.
     early_stopper = EarlyStopping(patience=15)
 
     # Helper: Save results.
     timestamp = time.time()
-    csv_logger = CSVLogger(os.path.join('data', 'tensorboard_logs', 'train_lstm_trainiertes_inceptionv3', 'lstm-training-' + str(timestamp) + '.log'))
+    csv_logger = CSVLogger(os.path.join('data', 'tensorboard_logs', 'train_global_pooling', 'lstm-training-' + str(timestamp) + '.log'))
 
     # Get the data and process it.
     if image_shape is None:
@@ -58,7 +58,7 @@ def train(data_type, seq_length, model, saved_model=None,
     # Model.
     model = Sequential()
 
-    # model.add(GlobalMaxPooling1D(input_shape=(seq_length, 2048)))
+    model.add(GlobalMaxPooling1D(input_shape=(seq_length, 2048)))
 
     # model.add(Flatten(input_shape=(seq_length, 2048)))
     # model.add(Reshape((seq_length * 2048, 1)))
@@ -67,9 +67,9 @@ def train(data_type, seq_length, model, saved_model=None,
 
     # model.add(Conv1D(32, kernel_size=5))
     # model.add(Conv1D(1024, dropout=0.5))
-    model.add(LSTM(2048, return_sequences=False,
-                   input_shape=(seq_length, 2048),
-                   dropout=0.5))
+    # model.add(LSTM(2048, return_sequences=False,
+    #                input_shape=(seq_length, 2048),
+    #                dropout=0.5))
     # model.add(LSTM(2048, return_sequences=False,
     #                dropout=0.4))
 
