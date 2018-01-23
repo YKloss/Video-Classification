@@ -25,7 +25,8 @@ class_limit = None  # Number of classes to extract. Can be 1-101 or None for all
 data = DataSet(seq_length=seq_length, class_limit=class_limit)
 
 # get the model.
-model = Extractor(os.path.join('data', 'tensorboard_logs', 'train_two_inceptions2', 'cnn2.080-2.34.hdf5'))
+#model = Extractor(os.path.join('data', 'tensorboard_logs', 'train_two_inceptions2', 'cnn2.080-2.34.hdf5'))
+model = Extractor()
 
 # Loop through data.
 pbar = tqdm(total=len(data.data))
@@ -33,7 +34,7 @@ pbar = tqdm(total=len(data.data))
 for index, row in data.data.iterrows():
 
     # Get the path to the sequence for this video.
-    path = os.path.join('data', 'sequences',
+    path = os.path.join('data', 'sequences', 'inceptionv3',
                         row["file_name"] + '-' + str(seq_length) + '-features')  # numpy will auto-append .npy
 
     # Check if we already have it.

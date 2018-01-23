@@ -139,7 +139,7 @@ class DataSet:
 
         print("Creating %s generator with %d samples." % (train_test, len(data)))
 
-        while 1:
+        while True:
             X, y = [], []
 
             # Generate batch_size samples.
@@ -166,7 +166,7 @@ class DataSet:
                         raise ValueError("Can't find sequence. Did you generate them?")
 
                 X.append(sequence)
-                y.append(self.get_class_one_hot(sample["class_name"]))
+                y.append(self.get_class_one_hot(sample.iloc[0]["class_name"]))
 
             yield np.array(X), np.array(y)
 
@@ -176,9 +176,11 @@ class DataSet:
 
     def get_extracted_sequence(self, data_type, sample):
         """Get the saved extracted features."""
-        filename = sample["file_name"]
-        path = os.path.join(self.sequence_path, filename + '-' + str(self.seq_length) + \
-                            '-' + data_type + '.npy')
+        try:
+            filename = sample.iloc[0]['file_name']
+        except:
+            filename = sample['file_name']
+        path = os.path.join(self.sequence_path, str(filename) + '-' + str(self.seq_length) + '-' + str(data_type) + '.npy')
         if os.path.isfile(path):
             return np.load(path)
         else:
@@ -188,8 +190,12 @@ class DataSet:
     def get_frames_for_sample(sample):
         """Given a sample row from the data file, get all the corresponding frame
         filenames."""
-        path = os.path.join('data', sample["train_test"], sample["class_name"])
-        filename = sample["file_name"]
+        try:
+            path = os.path.join('data', sample.iloc[0]["train_test"], sample.iloc[0]["class_name"])
+            filename = sample.iloc[0]["file_name"]
+        except:
+            path = os.path.join('data', sample["train_test"], sample["class_name"])
+            filename = sample["file_name"]
         images = sorted(glob.glob(os.path.join(path, filename + '*jpg')))
         return images
 
