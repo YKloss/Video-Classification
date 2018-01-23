@@ -3,39 +3,85 @@ import numpy as np
 import os
 from data_set import DataSet
 import matplotlib.pyplot as plt
+from subprocess import call
+from extractor import Extractor
+import glob
 
 data = DataSet()
 
-model = load_model(os.path.join('demo', 'pooling-features.046-2.029.hdf5'))
 
-sequence_path = os.path.join('data', 'sequences', 'inceptionv3',
-                             '#20_Rhythm_clap_u_nm_np1_fr_goo_0' + '-' + '40' + '-' + 'features' + '.npy')
+def get_model():
+    model = load_model(os.path.join('demo', 'pooling-features.046-2.029.hdf5'))
+    return model
 
-if os.path.isfile(sequence_path):
-    sequence = np.load(sequence_path)
-    sequence = sequence.reshape((1, sequence.shape[0], sequence.shape[1]))
-    print(sequence.shape)
-else:
-    raise Exception('Sequence file not found.')
 
-pred = model.predict(sequence, 1, 1)
-pred = pred.reshape((51,))
-print(pred)
-print(pred.shape)
+def get_frames_for_sample():
+    images = sorted(glob.glob(os.path.join('demo', 'frames', 'frame' + '*jpg')))
+    return images
 
-ind = np.argpartition(pred, -5)[-5:]
 
-print(data.classes)
+def rescale_list(frames, size=40):
+    """Given a list and a size, return a rescaled/samples list. For example,
+    if we want a list of size 5 and we have a list of size 25, return a new
+    list of size five which is every 5th element of the original list."""
+    assert len(frames) >= size
 
-y_pos = np.arange(len(ind))
+    # Get the number to skip between iterations.
+    skip = len(frames) // size
 
-classes = []
-for elem in ind:
-    classes.append(data.classes[elem])
+    # Build our new output.
+    output = [frames[i] for i in range(0, len(frames), skip)]
 
-plt.bar(y_pos, pred[ind])
-plt.xticks(y_pos, classes)
-plt.ylabel('Genauigkeit')
+    # Cut off the last one if needed.
+    return output[:size]
 
-plt.savefig(os.path.join('demo', 'prediction.png'))
-# plt.show()
+
+def extract_features():
+
+    frames = get_frames_for_sample()
+    frames = rescale_list(frames)
+
+    model = Extractor()
+
+    sequence = []
+    for image in frames:
+        features = model.extract(image)
+        sequence.append(features)
+
+    return np.array(sequence)
+
+
+def predict_class_probabilities(features):
+
+    features = features.reshape((1, features.shape[0], features.shape[1]))
+
+    model = load_model(os.path.join('demo', 'pooling-features.046-2.029.hdf5'))
+    prediction = model.predict(features, 1, 1)
+    prediction = prediction.reshape((51,))
+
+    top_5_indicies = np.argpartition(prediction, -5)[-5:]
+
+    y_pos = np.arange(len(top_5_indicies))
+
+    classes = []
+    for elem in top_5_indicies:
+        classes.append(data.classes[elem])
+
+    plt.bar(y_pos, prediction[top_5_indicies])
+    plt.xticks(y_pos, classes)
+    plt.ylabel('Genauigkeit')
+
+    plt.savefig(os.path.join('demo', 'prediction.png'))
+
+
+def extract_frames(video_file):
+    call(["ffmpeg", "-i", video_file, os.path.join('demo', 'frames', 'frames' + "frame-%04d.jpg")])
+
+if __name__ == '__main__':
+    video_file = os.path.join('data', 'hmdb', 'clap', '#20_Rhythm_clap_u_nm_np1_fr_goo_0.avi')
+
+    extract_frames(video_file)
+    features = extract_features()
+
+    predict_class_probabilities(features)
+
