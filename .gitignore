@@ -5,5 +5,6 @@ src/data/tensorboard_logs/
 src/data/test/
 src/data/train/
 src/spike/preview/
+src/demo/frames/
 src/__pycache__/
 .idea/
