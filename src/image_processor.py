@@ -1,5 +1,6 @@
 """
 Process an image that we can pass to our networks.
+This is an optional feature. It is a part of processing  images instead of features.
 """
 from keras.preprocessing.image import img_to_array, load_img
 import numpy as np
@@ -7,6 +8,7 @@ import numpy as np
 
 def process_image(image, target_shape):
     """Given an image, process it and return the array."""
+
     # Load the image.
     h, w, _ = target_shape
     image = load_img(image, target_size=(h, w))

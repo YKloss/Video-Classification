@@ -3,7 +3,6 @@ import re
 import glob
 from subprocess import call
 import csv
-import pandas as pd
 
 DATA_DIR = os.path.join("data")
 RAW_DATA_DIR = os.path.join(DATA_DIR, "hmdb")
@@ -27,28 +26,27 @@ def extract_frames():
         if not os.path.exists(os.path.join(TEST_DIR, class_name)):
             os.makedirs(os.path.join(TEST_DIR, class_name))
 
+        # Extract frames from the train set.
         for train_file in splits[class_name]["train"]:
             src = os.path.join(RAW_DATA_DIR, class_name, train_file + ".avi")
             dest = os.path.join(TRAIN_DIR, class_name, train_file + "-%04d.jpg")
             call(["ffmpeg", "-i", src, dest])
             frame_count = get_number_of_frames(os.path.join(TRAIN_DIR, class_name), train_file)
             data_file.append(["train", class_name, train_file, frame_count])
-            print("Extracted " + str(frame_count) + " frames from video " + str(train_file))
+            # print("Extracted " + str(frame_count) + " frames from video " + str(train_file))
 
+        # Extract frames from the test set.
         for test_file in splits[class_name]["test"]:
             src = os.path.join(RAW_DATA_DIR, class_name, test_file + ".avi")
             dest = os.path.join(TEST_DIR, class_name, test_file + "-%04d.jpg")
             call(["ffmpeg", "-i", src, dest])
             frame_count = get_number_of_frames(os.path.join(TEST_DIR, class_name), test_file)
             data_file.append(["test", class_name, test_file, frame_count])
-            print("Extracted " + str(frame_count) + " frames from video " + str(test_file))
+            # print("Extracted " + str(frame_count) + " frames from video " + str(test_file))
 
     with open(DATA_FILE, 'w', newline='') as outfile:
         writer = csv.writer(outfile)
         writer.writerows(data_file)
-
-    # df = pd.read_csv(os.path.join(DATA_DIR, "data_files.csv"), skip_blank_lines=True)
-    # df.to_csv(os.path.join(DATA_DIR, "data_files_new.csv"), index=False)
 
 
 def get_number_of_frames(class_path, video_name):
@@ -56,6 +54,7 @@ def get_number_of_frames(class_path, video_name):
     return len(frames)
 
 
+# Parse the split files from HMDB and return a dictionary with parsed class names, train and test structure.
 def parse_split_files(split_id=1):
 
     split_file_regex = re.compile('.*?(' + str(split_id) + ')\.(txt)')
